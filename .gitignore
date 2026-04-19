@@ -1,0 +1,30 @@
+# Environment variables — never commit real credentials
+.env
+.env.local
+.env.*.local
+
+# SQLite database
+*.db
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Alembic
+migrations/versions/__pycache__/
+
+# Vercel
+.vercel/
+
+# OS
+.DS_Store
+Thumbs.db
