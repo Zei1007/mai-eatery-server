@@ -7,8 +7,8 @@ class StockLog(Base):
 
     id = Column(String, primary_key=True, index=True)
     itemId = Column(String, nullable=False)
-    itemName = Column(String, nullable=True)
-    itemUnit = Column(String, nullable=True)
+    itemName = Column("itemname", String, nullable=True)
+    itemUnit = Column("itemunit", String, nullable=True)
     change = Column(Float, nullable=False)
     type = Column(String, nullable=False)
     timestamp = Column(BigInteger, nullable=False)

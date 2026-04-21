@@ -38,7 +38,9 @@ def _migrate():
     This is critical for PostgreSQL, which marks the whole transaction as
     aborted after any error and refuses further statements until a rollback.
     """
-    for col, col_type in [("itemName", "TEXT"), ("itemUnit", "TEXT")]:
+    # Columns were created unquoted by early migrations → stored as lowercase in PostgreSQL.
+    # SQLAlchemy model maps itemName→"itemname", itemUnit→"itemunit" to match.
+    for col, col_type in [("itemname", "TEXT"), ("itemunit", "TEXT")]:
         try:
             with engine.connect() as conn:
                 conn.execute(text(f"ALTER TABLE stock_logs ADD COLUMN {col} {col_type}"))
