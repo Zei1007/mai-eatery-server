@@ -1,10 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from sqlalchemy import text
 
 from app.config import settings
 from app.database import engine, Base, SessionLocal
+from app.dependencies import get_current_user
 from app.routers import auth, products, inventory, orders, stock_logs, audit_logs, reports, exports
 import app.models.product_ingredient  # ensure table is registered before create_all
 
@@ -84,3 +85,10 @@ app.include_router(exports.router)
 @app.get("/")
 def root():
     return {"status": "ok", "service": "mai-eatery-api"}
+
+
+@app.post("/admin/reset-db")
+def reset_db(_: str = Depends(get_current_user)):
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+    return {"status": "ok", "message": "Database wiped and recreated."}
