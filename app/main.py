@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from sqlalchemy import text
 
 from app.config import settings
 from app.database import engine, Base, SessionLocal
@@ -33,7 +34,7 @@ def _migrate(conn):
     """Add columns introduced after initial schema without breaking existing DBs."""
     for col, col_type in [("itemName", "TEXT"), ("itemUnit", "TEXT")]:
         try:
-            conn.execute(f"ALTER TABLE stock_logs ADD COLUMN {col} {col_type}")
+            conn.execute(text(f"ALTER TABLE stock_logs ADD COLUMN {col} {col_type}"))
             conn.commit()
         except Exception:
             pass  # column already exists
