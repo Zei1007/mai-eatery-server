@@ -87,6 +87,8 @@ def adjust_stock(
     log = StockLog(
         id=f"log-{uuid.uuid4().hex}",
         itemId=item_id,
+        itemName=item.name,
+        itemUnit=item.unit,
         change=delta,
         type=data.type,
         timestamp=int(time.time() * 1000),

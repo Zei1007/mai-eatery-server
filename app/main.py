@@ -30,21 +30,27 @@ def _seed(db):
 
 # ── App lifecycle ─────────────────────────────────────────────────────────────
 
-def _migrate(conn):
-    """Add columns introduced after initial schema without breaking existing DBs."""
+def _migrate():
+    """Add columns introduced after initial schema without breaking existing DBs.
+
+    Each ALTER TABLE runs in its own connection so a 'column already exists'
+    failure on one column does not abort the transaction for subsequent ones.
+    This is critical for PostgreSQL, which marks the whole transaction as
+    aborted after any error and refuses further statements until a rollback.
+    """
     for col, col_type in [("itemName", "TEXT"), ("itemUnit", "TEXT")]:
         try:
-            conn.execute(text(f"ALTER TABLE stock_logs ADD COLUMN {col} {col_type}"))
-            conn.commit()
+            with engine.connect() as conn:
+                conn.execute(text(f"ALTER TABLE stock_logs ADD COLUMN {col} {col_type}"))
+                conn.commit()
         except Exception:
-            pass  # column already exists
+            pass  # column already exists — safe to ignore
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
-    with engine.connect() as conn:
-        _migrate(conn)
+    _migrate()
     db = SessionLocal()
     try:
         _seed(db)
