@@ -4,11 +4,25 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.product import Product
+from app.models.product_ingredient import ProductIngredient
 from app.schemas.product import ProductCreate, ProductUpdate, ProductOut
 from app.services.audit_service import create_audit_log
 from app.dependencies import get_db, get_current_user
 
 router = APIRouter(prefix="/products", tags=["products"])
+
+
+def _replace_ingredients(db: Session, product_id: str, ingredients):
+    db.query(ProductIngredient).filter(ProductIngredient.product_id == product_id).delete()
+    for ing in ingredients:
+        db.add(ProductIngredient(
+            id=f"pi-{uuid.uuid4().hex[:8]}",
+            product_id=product_id,
+            inventory_item_id=ing.inventoryItemId,
+            inventory_item_name=ing.inventoryItemName,
+            quantity=ing.quantity,
+            unit=ing.unit,
+        ))
 
 
 @router.get("", response_model=List[ProductOut])
@@ -52,6 +66,8 @@ def create_product(
         image=data.image or f"https://picsum.photos/seed/{data.name}/400/400",
     )
     db.add(product)
+    db.flush()  # get the id before inserting ingredients
+    _replace_ingredients(db, product.id, data.ingredients)
     db.commit()
     db.refresh(product)
     create_audit_log(db, "Add Menu Item", f"Added product: {product.name} (₱{product.price})", current_user, "menu")
@@ -68,8 +84,10 @@ def update_product(
     product = db.get(Product, product_id)
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
-    for field, value in data.model_dump(exclude_none=True).items():
+    for field, value in data.model_dump(exclude_none=True, exclude={"ingredients"}).items():
         setattr(product, field, value)
+    if data.ingredients is not None:
+        _replace_ingredients(db, product.id, data.ingredients)
     db.commit()
     db.refresh(product)
     create_audit_log(db, "Update Menu Item", f"Updated product: {product.name}", current_user, "menu")

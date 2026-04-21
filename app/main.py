@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from app.config import settings
 from app.database import engine, Base, SessionLocal
 from app.routers import auth, products, inventory, orders, stock_logs, audit_logs, reports, exports
+import app.models.product_ingredient  # ensure table is registered before create_all
 
 # ── Seed data ────────────────────────────────────────────────────────────────
 
@@ -28,9 +29,21 @@ def _seed(db):
 
 # ── App lifecycle ─────────────────────────────────────────────────────────────
 
+def _migrate(conn):
+    """Add columns introduced after initial schema without breaking existing DBs."""
+    for col, col_type in [("itemName", "TEXT"), ("itemUnit", "TEXT")]:
+        try:
+            conn.execute(f"ALTER TABLE stock_logs ADD COLUMN {col} {col_type}")
+            conn.commit()
+        except Exception:
+            pass  # column already exists
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    with engine.connect() as conn:
+        _migrate(conn)
     db = SessionLocal()
     try:
         _seed(db)
