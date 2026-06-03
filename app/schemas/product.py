@@ -26,8 +26,8 @@ class ProductUpdate(BaseModel):
 
 
 class IngredientOut(BaseModel):
-    inventoryItemId: str = Field(alias="inventory_item_id")
-    inventoryItemName: str = Field(alias="inventory_item_name")
+    inventoryItemId: str = Field(validation_alias="inventory_item_id")
+    inventoryItemName: str = Field(validation_alias="inventory_item_name")
     quantity: float
     unit: str
 

@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     JWT_EXPIRE_MINUTES: int = 480
     ADMIN_USERNAME: str = "admin"
     ADMIN_PASSWORD: str = "admin"
-    CORS_ORIGINS: str = "http://localhost:3000"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,https://mai-eatery-client.vercel.app"
 
     @property
     def cors_origins_list(self) -> List[str]:
