@@ -44,13 +44,13 @@ def process_checkout(db: Session, cart: List[CartItem], username: str) -> Order:
         })
 
     # 2. Create Order record
-    order_id = f"ord-{uuid.uuid4().hex}"
+    order_id = f"ord-{uuid.uuid4().hex[:8][:8]}"
     order = Order(id=order_id, total=total, timestamp=now_ms)
     db.add(order)
 
     for r in resolved:
         db.add(OrderItem(
-            id=f"oi-{uuid.uuid4().hex}",
+            id=f"oi-{uuid.uuid4().hex[:8][:8]}",
             order_id=order_id,
             productId=r["product"].id,
             name=r["name"],
@@ -78,7 +78,7 @@ def process_checkout(db: Session, cart: List[CartItem], username: str) -> Order:
             inv_item.quantity = max(0.0, inv_item.quantity - deduct_qty)
 
             db.add(StockLog(
-                id=f"log-{uuid.uuid4().hex}",
+                id=f"log-{uuid.uuid4().hex[:8]}",
                 itemId=inv_item.id,
                 itemName=inv_item.name,
                 itemUnit=inv_item.unit,
@@ -91,7 +91,7 @@ def process_checkout(db: Session, cart: List[CartItem], username: str) -> Order:
     # 4. Audit log
     item_summary = ", ".join(f"{r['name']} ×{r['order_qty']}" for r in resolved)
     db.add(AuditLog(
-        id=f"audit-{uuid.uuid4().hex}",
+        id=f"audit-{uuid.uuid4().hex[:8]}",
         action="Order Placed",
         details=f"Order {order_id} — {item_summary} — ₱{total:.2f}",
         user=username,

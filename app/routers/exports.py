@@ -1,5 +1,6 @@
 import csv
 import io
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
@@ -12,6 +13,10 @@ from app.models.audit_log import AuditLog
 from app.dependencies import get_db, get_current_user
 
 router = APIRouter(prefix="/export", tags=["exports"])
+
+
+def _ms_to_str(ms: int) -> str:
+    return datetime.fromtimestamp(ms / 1000, tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
 
 def _csv_response(rows: list[list], headers: list[str], filename: str) -> StreamingResponse:
@@ -47,19 +52,22 @@ def export_orders(
     if end:
         q = q.filter(Order.timestamp <= end)
     orders = q.all()
-    rows = [[o.id, o.timestamp, o.total, "; ".join(f"{i.quantity}x {i.name}" for i in o.items)] for o in orders]
+    rows = [
+        [o.id, _ms_to_str(o.timestamp), o.total, "; ".join(f"{i.quantity}x {i.name}" for i in o.items)]
+        for o in orders
+    ]
     return _csv_response(rows, ["id", "timestamp", "total", "items"], "orders.csv")
 
 
 @router.get("/stock-logs")
 def export_stock_logs(db: Session = Depends(get_db), _: str = Depends(get_current_user)):
     logs = db.query(StockLog).order_by(StockLog.timestamp.desc()).all()
-    rows = [[l.id, l.itemId, l.change, l.type, l.timestamp, l.reason] for l in logs]
+    rows = [[l.id, l.itemId, l.change, l.type, _ms_to_str(l.timestamp), l.reason] for l in logs]
     return _csv_response(rows, ["id", "itemId", "change", "type", "timestamp", "reason"], "stock_logs.csv")
 
 
 @router.get("/audit-logs")
 def export_audit_logs(db: Session = Depends(get_db), _: str = Depends(get_current_user)):
     logs = db.query(AuditLog).order_by(AuditLog.timestamp.desc()).all()
-    rows = [[l.id, l.action, l.details, l.user, l.timestamp, l.type] for l in logs]
+    rows = [[l.id, l.action, l.details, l.user, _ms_to_str(l.timestamp), l.type] for l in logs]
     return _csv_response(rows, ["id", "action", "details", "user", "timestamp", "type"], "audit_logs.csv")
